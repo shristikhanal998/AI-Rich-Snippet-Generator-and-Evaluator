@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RichStruct — Schema Generator & Validator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper: #F1F2EC;
+    --paper-line: rgba(20,33,61,0.07);
+    --ink: #14213D;
+    --ink-soft: #55607A;
+    --ink-faint: #8B93A6;
+    --card: #FFFFFF;
+    --line: #DBDCD3;
+    --teal: #0F6E5C;
+    --teal-soft: #E3EFE9;
+    --amber: #B9791E;
+    --amber-soft: #F5EADA;
+    --rust: #B23E33;
+    --rust-soft: #F5E3E0;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 3px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px),
+      var(--paper);
+    background-size: 32px 32px, 32px 32px, auto;
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{color:inherit; text-decoration:none;}
+
+  .wrap{max-width:1140px; margin:0 auto; padding:0 28px;}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--teal);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:16px; height:1px;
+    background:var(--teal);
+  }
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(241,242,236,0.86);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 28px;
+    max-width:1140px; margin:0 auto;
+  }
+  .brand{
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:17px;
+    letter-spacing:-0.01em;
+  }
+  .brand span{color:var(--teal);}
+  .nav-links{display:flex; gap:32px; align-items:center;}
+  .nav-links a{
+    font-size:14px; color:var(--ink-soft);
+    transition:color .15s ease;
+  }
+  .nav-links a:hover{color:var(--ink);}
+  .nav-cta{
+    font-family:var(--mono);
+    font-size:13px;
+    padding:8px 16px;
+    border:1px solid var(--ink);
+    border-radius:var(--radius);
+    color:var(--ink);
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-cta:hover{background:var(--ink); color:var(--paper);}
+
+  @media (max-width:720px){
+    .nav-links a:not(.nav-cta){display:none;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:88px 0 100px;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:64px;
+    align-items:center;
+  }
+  .hero h1{
+    font-family:var(--mono);
+    font-size:42px;
+    line-height:1.18;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin-bottom:22px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--teal);
+    border-bottom:2px solid var(--teal);
+  }
+  .hero p.lede{
+    font-size:17px;
+    color:var(--ink-soft);
+    max-width:46ch;
+    margin-bottom:32px;
+  }
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:34px;}
+  .btn-primary, .btn-secondary{
+    font-family:var(--mono);
+    font-size:14px;
+    padding:13px 22px;
+    border-radius:var(--radius);
+    display:inline-block;
+    transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn-primary{
+    background:var(--ink); color:var(--paper);
+    border:1px solid var(--ink);
+  }
+  .btn-primary:hover{background:var(--teal); border-color:var(--teal); transform:translateY(-1px);}
+  .btn-secondary{
+    border:1px solid var(--line);
+    color:var(--ink);
+    background:var(--card);
+  }
+  .btn-secondary:hover{border-color:var(--ink); transform:translateY(-1px);}
+
+  .type-strip{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-faint);
+    display:flex; flex-wrap:wrap; gap:8px 10px;
+  }
+  .type-strip span{
+    border:1px solid var(--line);
+    padding:3px 8px;
+    border-radius:var(--radius);
+    background:var(--card);
+  }
+
+  /* ---------- ANNOTATED CODE PANEL (signature) ---------- */
+  .code-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow:0 20px 40px -24px rgba(20,33,61,0.25);
+    overflow:hidden;
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .code-head .dots{display:flex; gap:6px;}
+  .code-head .dots i{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--line); display:inline-block;
+  }
+  .code-body{
+    padding:18px 0;
+    font-family:var(--mono);
+    font-size:13px;
+  }
+  .code-line{
+    display:grid;
+    grid-template-columns:34px 1fr auto;
+    align-items:center;
+    padding:5px 16px;
+    gap:14px;
+    border-left:2px solid transparent;
+    transition:background .15s ease, border-color .15s ease;
+    cursor:default;
+  }
+  .code-line:hover{
+    background:rgba(15,110,92,0.05);
+    border-left-color:var(--teal);
+  }
+  .code-line .num{color:var(--ink-faint); text-align:right; user-select:none;}
+  .code-line .txt{white-space:pre; color:var(--ink-soft); overflow-x:auto;}
+  .code-line .txt .k{color:var(--teal);}
+  .code-line .txt .s{color:var(--ink);}
+  .code-line .txt .p{color:var(--ink-faint);}
+  .tag{
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:2px 7px;
+    border-radius:2px;
+    white-space:nowrap;
+    opacity:0;
+    transform:translateX(4px);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .code-line:hover .tag{opacity:1; transform:translateX(0);}
+  .tag.req{background:var(--teal-soft); color:var(--teal);}
+  .tag.opt{background:var(--amber-soft); color:var(--amber);}
+
+  /* ---------- SECTION SCAFFOLD ---------- */
+  section{padding:96px 0;}
+  .section-head{max-width:640px; margin-bottom:52px;}
+  .section-head h2{
+    font-family:var(--mono);
+    font-size:28px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin-bottom:14px;
+  }
+  .section-head p{color:var(--ink-soft); font-size:16px;}
+
+  .fade{
+    opacity:0; transform:translateY(14px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .fade.in{opacity:1; transform:translateY(0);}
+
+  /* ---------- PROBLEM / REPORT CARD ---------- */
+  .problem{
+    background:#EBEAE2;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  .problem-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;
+  }
+  .problem-copy h2{
+    font-family:var(--mono); font-size:26px; font-weight:600; margin-bottom:16px; line-height:1.3;
+  }
+  .problem-copy p{color:var(--ink-soft); margin-bottom:14px; max-width:44ch;}
+
+  .report-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .report-top{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .report-top .status{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--rust); display:flex; align-items:center; gap:8px;
+  }
+  .report-top .status::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--rust);}
+  .report-counts{display:flex; gap:16px; font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
+  .report-counts b{color:var(--ink);}
+
+  .issue{
+    display:grid; grid-template-columns:auto 1fr; gap:14px;
+    padding:16px 20px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .issue:last-child{border-bottom:none;}
+  .sev{
+    font-family:var(--mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+    padding:3px 8px; border-radius:2px; height:fit-content;
+  }
+  .sev.err{background:var(--rust-soft); color:var(--rust);}
+  .sev.warn{background:var(--amber-soft); color:var(--amber);}
+  .issue .field{font-family:var(--mono); font-size:12.5px; color:var(--ink); margin-bottom:3px;}
+  .issue .desc{font-size:13.5px; color:var(--ink-soft);}
+  .issue .fix{font-size:12.5px; color:var(--teal); margin-top:4px;}
+
+  /* ---------- FEATURES ---------- */
+  .feature-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .feature{
+    background:var(--card);
+    padding:28px 26px;
+  }
+  .feature .fname{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:10px;
+  }
+  .feature .ftype{
+    font-family:var(--mono); font-size:12px; color:var(--teal); margin-bottom:12px;
+  }
+  .feature h3{font-size:16px; font-weight:600; margin-bottom:8px;}
+  .feature p{font-size:13.5px; color:var(--ink-soft);}
+
+  @media (max-width:860px){
+    .feature-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width:560px){
+    .feature-grid{grid-template-columns:1fr;}
+  }
+
+  /* ---------- PIPELINES ---------- */
+  .pipelines{
+    display:flex; flex-direction:column; gap:64px;
+  }
+  .pipeline-label{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:18px;
+  }
+  .pipeline-row{
+    display:flex; align-items:stretch; gap:0; overflow-x:auto;
+  }
+  .stage{
+    flex:1; min-width:170px;
+    background:var(--card);
+    border:1px solid var(--line);
+    padding:20px 18px;
+    position:relative;
+  }
+  .stage + .stage{border-left:none;}
+  .stage .step-num{
+    font-family:var(--mono); font-size:11px; color:var(--teal); margin-bottom:10px;
+  }
+  .stage h4{font-size:14.5px; font-weight:600; margin-bottom:6px;}
+  .stage p{font-size:12.5px; color:var(--ink-soft);}
+  .stage::after{
+    content:"→";
+    position:absolute; right:-11px; top:50%; transform:translateY(-50%);
+    width:20px; height:20px; line-height:20px; text-align:center;
+    background:var(--paper); color:var(--ink-faint);
+    font-size:13px; z-index:2;
+  }
+  .stage:last-child::after{display:none;}
+
+  /* ---------- TYPES ---------- */
+  .types-band{
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding:40px 0;
+  }
+  .types-band .wrap{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+  .types-label{font-family:var(--mono); font-size:12px; color:var(--ink-faint); white-space:nowrap;}
+  .type-chips{display:flex; flex-wrap:wrap; gap:10px;}
+  .type-chips span{
+    font-family:var(--mono); font-size:12.5px;
+    border:1px solid var(--line); background:var(--card);
+    padding:6px 12px; border-radius:20px; color:var(--ink-soft);
+  }
+
+  /* ---------- STACK ---------- */
+  .stack-strip{
+    font-family:var(--mono); font-size:12.5px; color:var(--ink-faint);
+    display:flex; flex-wrap:wrap; gap:10px 26px;
+    padding:26px 0;
+  }
+  .stack-strip b{color:var(--ink-soft); font-weight:500;}
+
+  /* ---------- FINAL CTA ---------- */
+  .final-cta{
+    text-align:center;
+    padding:110px 0;
+  }
+  .final-cta h2{
+    font-family:var(--mono); font-size:32px; font-weight:600; margin-bottom:18px;
+  }
+  .final-cta p{color:var(--ink-soft); margin-bottom:32px;}
+  .final-cta .cta-row{justify-content:center;}
+
+  footer{
+    border-top:1px solid var(--line);
+    padding:28px 0;
+  }
+  footer .wrap{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  }
+  footer .brand{font-size:14px;}
+  footer .meta{font-family:var(--mono); font-size:12px; color:var(--ink-faint);}
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr; gap:48px;}
+    .problem-grid{grid-template-columns:1fr; gap:36px;}
+    .hero h1{font-size:32px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">{ <span>RichStruct</span> }</div>
+    <nav class="nav-links">
+      <a href="#validate">Validation</a>
+      <a href="#features">Features</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#" class="nav-cta">Start a schema</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Schema generator &amp; validator</div>
+      <h1>Write schema markup<br>by filling in a <em>form</em>,<br>not writing JSON.</h1>
+      <p class="lede">RichStruct turns Schema.org vocabulary into guided forms, generates clean JSON-LD, and checks it against Google's rich-result rules before it ever reaches production.</p>
+      <div class="cta-row">
+        <a href="#" class="btn-primary">Generate a schema</a>
+        <a href="#validate" class="btn-secondary">See a validation run</a>
+      </div>
+      <div class="type-strip">
+        <span>Product</span><span>FAQ</span><span>Article</span><span>Local Business</span>
+        <span>Event</span><span>Course</span><span>Job Posting</span><span>Recipe</span>
+      </div>
+    </div>
+
+    <div class="code-panel fade">
+      <div class="code-head">
+        <span>product.jsonld</span>
+        <div class="dots"><i></i><i></i><i></i></div>
+      </div>
+      <div class="code-body">
+        <div class="code-line"><span class="num">1</span><span class="txt">{</span><span></span></div>
+        <div class="code-line"><span class="num">2</span><span class="txt">  <span class="k">"@context"</span><span class="p">:</span> <span class="s">"https://schema.org"</span>,</span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">3</span><span class="txt">  <span class="k">"@type"</span><span class="p">:</span> <span class="s">"Product"</span>,</span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">4</span><span class="txt">  <span class="k">"name"</span><span class="p">:</span> <span class="s">"Field Notebook"</span>,</span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">5</span><span class="txt">  <span class="k">"sku"</span><span class="p">:</span> <span class="s">"FN-014"</span>,</span><span class="tag opt">Optional</span></div>
+        <div class="code-line"><span class="num">6</span><span class="txt">  <span class="k">"aggregateRating"</span><span class="p">: {</span></span><span class="tag opt">Recommended</span></div>
+        <div class="code-line"><span class="num">7</span><span class="txt">    <span class="k">"ratingValue"</span><span class="p">:</span> <span class="s">"4.6"</span>,</span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">8</span><span class="txt">    <span class="k">"reviewCount"</span><span class="p">:</span> <span class="s">"38"</span></span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">9</span><span class="txt">  <span class="p">}</span></span><span></span></div>
+        <div class="code-line"><span class="num">10</span><span class="txt"><span class="p">}</span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problem">
+  <div class="wrap problem-grid">
+    <div class="problem-copy fade">
+      <div class="eyebrow">The problem</div>
+      <h2>One missing comma and Google stops reading your markup.</h2>
+      <p>Writing JSON-LD by hand means knowing Schema.org's vocabulary, which properties are required, and which data types Google's rich results actually accept.</p>
+      <p>A typo in a property name or a missing field is invisible until a rich result silently fails to appear.</p>
+    </div>
+
+    <div class="report-card fade">
+      <div class="report-top">
+        <span class="status">Invalid schema</span>
+        <div class="report-counts"><span><b>2</b> errors</span><span><b>1</b> warning</span></div>
+      </div>
+      <div class="issue">
+        <span class="sev err">Error</span>
+        <div>
+          <div class="field">aggregateRating.reviewCount</div>
+          <div class="desc">Missing required property for AggregateRating.</div>
+          <div class="fix">Fix → add reviewCount as a number.</div>
+        </div>
+      </div>
+      <div class="issue">
+        <span class="sev err">Error</span>
+        <div>
+          <div class="field">offers.priceCurrency</div>
+          <div class="desc">Value "US Dollars" is not a valid ISO 4217 code.</div>
+          <div class="fix">Fix → use "USD" instead.</div>
+        </div>
+      </div>
+      <div class="issue">
+        <span class="sev warn">Warning</span>
+        <div>
+          <div class="field">image</div>
+          <div class="desc">No image property found — required for rich result eligibility.</div>
+          <div class="fix">Fix → add at least one product image URL.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head fade">
+      <div class="eyebrow">What it does</div>
+      <h2>Six modules, one schema pipeline.</h2>
+      <p>Everything needed to go from a blank page to validated, publish-ready structured data.</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="feature-grid fade">
+      <div class="feature">
+        <div class="fname">Dynamic forms</div>
+        <div class="ftype">type: input</div>
+        <h3>A form for every schema type</h3>
+        <p>Pick a type and RichStruct builds the right fields, marks what's required, and explains each one inline.</p>
+      </div>
+      <div class="feature">
+        <div class="fname">JSON-LD generator</div>
+        <div class="ftype">type: output</div>
+        <h3>Clean markup, every time</h3>
+        <p>Form data becomes properly nested, correctly typed JSON-LD — ready to view, copy, download, or save.</p>
+      </div>
+      <div class="feature">
+        <div class="fname">Three-stage validator</div>
+        <div class="ftype">type: check</div>
+        <h3>Syntax, schema, and rich results</h3>
+        <p>Paste existing markup and RichStruct checks JSON syntax, Schema.org compliance, and Google's rich-result requirements in sequence.</p>
+      </div>
+      <div class="feature">
+        <div class="fname">Role-based access</div>
+        <div class="ftype">type: auth</div>
+        <h3>Standard users and admins</h3>
+        <p>Users manage their own schemas. Admins oversee accounts, stored schemas, and the audit trail.</p>
+      </div>
+      <div class="feature">
+        <div class="fname">Ratings &amp; reviews</div>
+        <div class="ftype">type: data</div>
+        <h3>Reviews that feed the schema</h3>
+        <p>Star ratings and comments are stored, averaged automatically, and can populate AggregateRating fields directly.</p>
+      </div>
+      <div class="feature">
+        <div class="fname">Audit log</div>
+        <div class="ftype">type: record</div>
+        <h3>Every action, timestamped</h3>
+        <p>Logins, generations, validations, and admin actions are all recorded for accountability.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="workflow">
+  <div class="wrap">
+    <div class="section-head fade">
+      <div class="eyebrow">How it works</div>
+      <h2>Two pipelines: build, and validate.</h2>
+      <p>Generating a schema and checking one follow their own sequence — each stage passes its result to the next.</p>
+    </div>
+
+    <div class="pipelines">
+      <div class="fade">
+        <div class="pipeline-label">Build a schema</div>
+        <div class="pipeline-row">
+          <div class="stage"><div class="step-num">01</div><h4>Select type</h4><p>Choose from Product, FAQ, Article, Event, and more.</p></div>
+          <div class="stage"><div class="step-num">02</div><h4>Fill the form</h4><p>Required and optional fields, with inline guidance.</p></div>
+          <div class="stage"><div class="step-num">03</div><h4>Generate JSON-LD</h4><p>Nested, typed markup built automatically.</p></div>
+          <div class="stage"><div class="step-num">04</div><h4>Save or export</h4><p>Copy it, download it, or store it for later edits.</p></div>
+        </div>
+      </div>
+
+      <div class="fade" id="validate">
+        <div class="pipeline-label">Validate a schema</div>
+        <div class="pipeline-row">
+          <div class="stage"><div class="step-num">01</div><h4>Paste JSON-LD</h4><p>Drop in markup from anywhere on your site.</p></div>
+          <div class="stage"><div class="step-num">02</div><h4>Check syntax</h4><p>Catch missing brackets, commas, and quotes.</p></div>
+          <div class="stage"><div class="step-num">03</div><h4>Check Schema.org</h4><p>Verify the type, properties, and data types.</p></div>
+          <div class="stage"><div class="step-num">04</div><h4>Check rich results</h4><p>Confirm Google's eligibility requirements are met.</p></div>
+          <div class="stage"><div class="step-num">05</div><h4>Get the report</h4><p>Errors and warnings, each with a suggested fix.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="types-band">
+  <div class="wrap">
+    <span class="types-label">Supported schema types</span>
+    <div class="type-chips">
+      <span>Product</span><span>FAQPage</span><span>Article</span><span>LocalBusiness</span>
+      <span>Event</span><span>Course</span><span>JobPosting</span><span>Recipe</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stack-strip fade">
+    <span><b>Backend</b> Python / Flask</span>
+    <span><b>Data</b> SQLAlchemy / SQLite</span>
+    <span><b>Frontend</b> HTML5 / CSS3 / Jinja2</span>
+    <span><b>Security</b> Werkzeug password hashing</span>
+  </div>
+</div>
+
+<section class="final-cta">
+  <div class="wrap">
+    <div class="eyebrow" style="justify-content:center;">Get started</div>
+    <h2>Your next rich result starts<br>with valid markup.</h2>
+    <p>Generate a schema, run it through validation, and see exactly what's missing — before search engines do.</p>
+    <div class="cta-row">
+      <a href="#" class="btn-primary">Generate a schema</a>
+      <a href="#" class="btn-secondary">Validate existing markup</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand">{ <span style="color:var(--teal);">RichStruct</span> }</div>
+    <div class="meta">Schema Generator &amp; Validator System</div>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('in');
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.fade').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
