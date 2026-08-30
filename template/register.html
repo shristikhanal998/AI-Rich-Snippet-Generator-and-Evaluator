@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Log in — RichStruct</title>
+<title>Sign up — RichStruct</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -102,7 +102,7 @@
     flex:1;
     display:flex;
     align-items:center;
-    padding:64px 0;
+    padding:56px 0;
   }
 
   .auth-grid{
@@ -125,7 +125,7 @@
   .auth-copy > p{
     color:var(--ink-soft);
     font-size:15px;
-    margin-bottom:32px;
+    margin-bottom:28px;
     max-width:42ch;
   }
 
@@ -148,7 +148,8 @@
     padding:28px;
   }
 
-  .field{margin-bottom:20px;}
+  .field{margin-bottom:18px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   .field label{
     display:block;
     font-family:var(--mono);
@@ -175,14 +176,34 @@
     border-color:var(--teal);
     box-shadow:0 0 0 3px var(--teal-soft);
   }
-
-  .row-between{
-    display:flex; justify-content:space-between; align-items:center;
-    margin-bottom:24px;
-    font-size:13px;
+  .hint{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-top:6px;
   }
-  .remember{display:flex; align-items:center; gap:8px; color:var(--ink-soft);}
-  .remember input{accent-color:var(--teal);}
+
+  /* password strength meter */
+  .strength{
+    display:flex; gap:4px;
+    margin-top:8px;
+  }
+  .strength i{
+    flex:1; height:3px; border-radius:2px;
+    background:var(--line);
+    display:block;
+  }
+  .strength.weak i:nth-child(1){background:var(--rust);}
+  .strength.fair i:nth-child(1),
+  .strength.fair i:nth-child(2){background:var(--amber);}
+  .strength.strong i{background:var(--teal);}
+
+  .terms{
+    display:flex; align-items:flex-start; gap:10px;
+    margin:22px 0 22px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .terms input{margin-top:3px; accent-color:var(--teal);}
   .link{color:var(--teal); font-weight:500;}
   .link:hover{text-decoration:underline;}
 
@@ -202,14 +223,14 @@
   .btn-primary:active{transform:translateY(0);}
   .btn-primary:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 
-  .signup-note{
+  .signin-note{
     text-align:center;
     margin-top:22px;
     font-size:13.5px;
     color:var(--ink-soft);
   }
 
-  /* ---- Right: annotated schema panel (signature, matches landing) ---- */
+  /* ---- Right: annotated schema panel (signature, matches landing + login) ---- */
   .code-panel{
     background:var(--card);
     border:1px solid var(--line);
@@ -266,9 +287,27 @@
     box-shadow:0 0 0 3px var(--amber-soft);
   }
 
+  .perks{
+    margin-top:24px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .perk{
+    display:flex; align-items:flex-start; gap:10px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  .perk .mark{
+    font-family:var(--mono);
+    color:var(--teal);
+    font-weight:600;
+  }
+
   @media (max-width:900px){
     .auth-grid{grid-template-columns:1fr; gap:40px;}
     .code-panel{order:2;}
+    .field-row{grid-template-columns:1fr;}
   }
 
   footer{
@@ -294,7 +333,7 @@
     <nav class="nav-links">
       <a href="#features">Features</a>
       <a href="#workflow">Workflow</a>
-      <a href="#" class="nav-cta">Sign up</a>
+      <a href="#" class="nav-cta">Log in</a>
     </nav>
   </div>
 </header>
@@ -303,55 +342,70 @@
   <div class="wrap auth-grid">
 
     <div class="auth-copy fade">
-      <div class="eyebrow">Account access</div>
-      <h1>Log in to<br>your schemas.</h1>
-      <p>Pick up where you left off — saved schemas, past validation reports, and your reviews are all here.</p>
+      <div class="eyebrow">Create an account</div>
+      <h1>Start generating<br>valid schema markup.</h1>
+      <p>Sign up to build, save, and validate structured data — no JSON-LD experience required.</p>
 
       <div class="auth-card">
         <form method="POST" action="#" novalidate>
 
           <div class="field">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus>
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" placeholder="jane_doe" required minlength="3" autofocus>
           </div>
 
           <div class="field">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required minlength="8">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required>
           </div>
 
-          <div class="row-between">
-            <label class="remember">
-              <input type="checkbox" name="remember"> Remember me
-            </label>
-            <a href="#" class="link">Forgot password?</a>
+          <div class="field-row">
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="••••••••" required minlength="8">
+              <div class="strength" id="strengthMeter"><i></i><i></i><i></i></div>
+              <div class="hint">Minimum 8 characters.</div>
+            </div>
+            <div class="field">
+              <label for="confirm_password">Confirm password</label>
+              <input type="password" id="confirm_password" name="confirm_password" placeholder="••••••••" required minlength="8">
+            </div>
           </div>
 
-          <button type="submit" class="btn-primary">Log in</button>
+          <label class="terms">
+            <input type="checkbox" required>
+            <span>I agree to the <a href="#" class="link">Terms of Service</a> and <a href="#" class="link">Privacy Policy</a>.</span>
+          </label>
+
+          <button type="submit" class="btn-primary">Create account</button>
         </form>
 
-        <p class="signup-note">Don't have an account? <a href="#" class="link">Sign up</a></p>
+        <p class="signin-note">Already have an account? <a href="#" class="link">Log in</a></p>
       </div>
     </div>
 
     <div class="code-panel fade">
       <div class="code-head">
-        <span>session.jsonld</span>
+        <span>account.jsonld</span>
         <div class="dots"><i></i><i></i><i></i></div>
       </div>
       <div class="code-body">
         <div class="code-line"><span class="num">1</span><span class="txt">{</span><span></span></div>
         <div class="code-line"><span class="num">2</span><span class="txt">  <span class="k">"@context"</span><span class="p">:</span> <span class="s">"https://schema.org"</span>,</span><span class="tag req">Required</span></div>
-        <div class="code-line"><span class="num">3</span><span class="txt">  <span class="k">"@type"</span><span class="p">:</span> <span class="s">"LoginAction"</span>,</span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">3</span><span class="txt">  <span class="k">"@type"</span><span class="p">:</span> <span class="s">"RegisterAction"</span>,</span><span class="tag req">Required</span></div>
         <div class="code-line"><span class="num">4</span><span class="txt">  <span class="k">"agent"</span><span class="p">: {</span></span><span></span></div>
         <div class="code-line"><span class="num">5</span><span class="txt">    <span class="k">"@type"</span><span class="p">:</span> <span class="s">"Person"</span>,</span><span class="tag req">Required</span></div>
-        <div class="code-line"><span class="num">6</span><span class="txt">    <span class="k">"email"</span><span class="p">:</span> <span class="s">"?"</span></span><span class="tag pending">Pending</span></div>
-        <div class="code-line"><span class="num">7</span><span class="txt">  <span class="p">},</span></span><span></span></div>
-        <div class="code-line"><span class="num">8</span><span class="txt">  <span class="k">"actionStatus"</span><span class="p">:</span> <span class="s">"PotentialActionStatus"</span>,</span><span class="tag req">Required</span></div>
-        <div class="code-line"><span class="num">9</span><span class="txt">  <span class="k">"target"</span><span class="p">:</span> <span class="s">"/dashboard"</span></span><span class="tag opt">Optional</span></div>
-        <div class="code-line"><span class="num">10</span><span class="txt"><span class="p">}</span></span><span></span></div>
+        <div class="code-line"><span class="num">6</span><span class="txt">    <span class="k">"name"</span><span class="p">:</span> <span class="s">"?"</span>,</span><span class="tag pending">Pending</span></div>
+        <div class="code-line"><span class="num">7</span><span class="txt">    <span class="k">"email"</span><span class="p">:</span> <span class="s">"?"</span></span><span class="tag pending">Pending</span></div>
+        <div class="code-line"><span class="num">8</span><span class="txt">  <span class="p">},</span></span><span></span></div>
+        <div class="code-line"><span class="num">9</span><span class="txt">  <span class="k">"result"</span><span class="p">: {</span></span><span></span></div>
+        <div class="code-line"><span class="num">10</span><span class="txt">    <span class="k">"@type"</span><span class="p">:</span> <span class="s">"Role"</span><span class="p">,</span></span><span class="tag opt">Default</span></div>
+        <div class="code-line"><span class="num">11</span><span class="txt">    <span class="k">"roleName"</span><span class="p">:</span> <span class="s">"standard_user"</span></span><span class="tag opt">Optional</span></div>
+        <div class="code-line"><span class="num">12</span><span class="txt">  <span class="p">},</span></span><span></span></div>
+        <div class="code-line"><span class="num">13</span><span class="txt">  <span class="k">"actionStatus"</span><span class="p">:</span> <span class="s">"PotentialActionStatus"</span></span><span class="tag req">Required</span></div>
+        <div class="code-line"><span class="num">14</span><span class="txt"><span class="p">}</span></span><span></span></div>
       </div>
-      <div class="status-strip"><span class="dot"></span> awaiting credentials to resolve actionStatus</div>
+      <div class="status-strip"><span class="dot"></span> two fields pending before actionStatus resolves</div>
     </div>
 
   </div>
@@ -363,6 +417,21 @@
     <div class="meta">Schema Generator &amp; Validator System</div>
   </div>
 </footer>
+
+<script>
+  const pw = document.getElementById('password');
+  const meter = document.getElementById('strengthMeter');
+  if (pw && meter) {
+    pw.addEventListener('input', () => {
+      const v = pw.value;
+      let score = 0;
+      if (v.length >= 8) score++;
+      if (/[A-Z]/.test(v) && /[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v) && v.length >= 10) score++;
+      meter.className = 'strength' + (score === 0 ? '' : score === 1 ? ' weak' : score === 2 ? ' fair' : ' strong');
+    });
+  }
+</script>
 
 </body>
 </html>
