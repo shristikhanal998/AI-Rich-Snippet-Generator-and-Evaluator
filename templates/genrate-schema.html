@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generate a schema — RichStruct</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper: #F1F2EC;
+    --paper-line: rgba(20,33,61,0.07);
+    --ink: #14213D;
+    --ink-soft: #55607A;
+    --ink-faint: #8B93A6;
+    --card: #FFFFFF;
+    --line: #DBDCD3;
+    --teal: #0F6E5C;
+    --teal-soft: #E3EFE9;
+    --amber: #B9791E;
+    --amber-soft: #F5EADA;
+    --rust: #B23E33;
+    --rust-soft: #F5E3E0;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 3px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    min-height:100vh;
+    background:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px),
+      var(--paper);
+    background-size: 32px 32px, 32px 32px, auto;
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{color:inherit; text-decoration:none;}
+  .wrap{max-width:1280px; margin:0 auto; padding:0 28px;}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--teal); display:flex; align-items:center; gap:10px; margin-bottom:10px;
+  }
+  .eyebrow::before{content:""; width:16px; height:1px; background:var(--teal);}
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(241,242,236,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; max-width:1280px; margin:0 auto;
+  }
+  .brand{font-family:var(--mono); font-weight:600; font-size:17px; letter-spacing:-0.01em;}
+  .brand span{color:var(--teal);}
+  .nav-links{display:flex; gap:28px; align-items:center;}
+  .nav-links a:not(.nav-cta){font-size:14px; color:var(--ink-soft); transition:color .15s ease;}
+  .nav-links a.active{color:var(--ink); font-weight:500;}
+  .nav-links a:not(.nav-cta):hover{color:var(--ink);}
+  .nav-cta{
+    font-family:var(--mono); font-size:13px; padding:7px 14px;
+    border-radius:20px; background:var(--teal-soft); color:var(--teal); font-weight:500;
+  }
+  @media (max-width:720px){ .nav-links a:not(.nav-cta){display:none;} }
+
+  /* ---------- PAGE HEAD ---------- */
+  .page-head{padding:36px 0 24px;}
+  .page-head h1{
+    font-family:var(--mono); font-size:26px; font-weight:600; letter-spacing:-0.01em; margin-bottom:8px;
+  }
+  .page-head p{color:var(--ink-soft); font-size:14.5px; max-width:60ch;}
+
+  /* ---------- TYPE PICKER ---------- */
+  .type-picker{padding-bottom:28px;}
+  .type-picker .label{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:12px;
+  }
+  .type-chips{display:flex; flex-wrap:wrap; gap:10px;}
+  .type-chip{
+    font-family:var(--mono); font-size:13px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink-soft);
+    padding:9px 16px; border-radius:20px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .type-chip:hover{border-color:var(--ink-faint); color:var(--ink);}
+  .type-chip.active{background:var(--ink); border-color:var(--ink); color:var(--paper);}
+
+  /* ---------- WORKSPACE ---------- */
+  .workspace{
+    display:grid; grid-template-columns:1fr 1fr; gap:24px;
+    padding-bottom:80px; align-items:start;
+  }
+
+  /* ---- Form side ---- */
+  .form-card{
+    background:var(--card); border:1px solid var(--line); border-radius:6px;
+    box-shadow:0 20px 40px -28px rgba(20,33,61,0.2);
+  }
+  .form-card-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 22px; border-bottom:1px solid var(--line);
+  }
+  .form-card-head .ftype{font-family:var(--mono); font-size:13px; font-weight:600;}
+  .form-card-head .fcount{font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);}
+  .form-body{padding:22px;}
+
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field-label-row{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;
+  }
+  .field-label{
+    display:flex; align-items:center; gap:7px;
+    font-family:var(--mono); font-size:12px; color:var(--ink);
+  }
+  .field-label .tip{
+    width:14px; height:14px; border-radius:50%;
+    border:1px solid var(--ink-faint); color:var(--ink-faint);
+    font-size:10px; display:flex; align-items:center; justify-content:center;
+    cursor:help; font-family:var(--sans);
+  }
+  .field-tag{
+    font-size:9.5px; letter-spacing:0.06em; text-transform:uppercase;
+    padding:2px 7px; border-radius:2px;
+  }
+  .field-tag.req{background:var(--teal-soft); color:var(--teal);}
+  .field-tag.opt{background:var(--amber-soft); color:var(--amber);}
+
+  .field input, .field textarea{
+    width:100%; font-family:var(--sans); font-size:14px; color:var(--ink);
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px 12px; outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field textarea{resize:vertical; min-height:64px; font-family:var(--mono); font-size:13px;}
+  .field input::placeholder, .field textarea::placeholder{color:var(--ink-faint);}
+  .field input:focus, .field textarea:focus{
+    border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-soft);
+  }
+  .field input.touched:invalid{border-color:var(--rust);}
+  .field .hint{font-size:11.5px; color:var(--ink-faint); margin-top:5px;}
+
+  /* ---- Output side ---- */
+  .output-col{position:sticky; top:88px; display:flex; flex-direction:column; gap:14px;}
+
+  .code-panel{
+    background:var(--card); border:1px solid var(--line); border-radius:6px;
+    box-shadow:0 20px 40px -28px rgba(20,33,61,0.25); overflow:hidden;
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:12px; color:var(--ink-faint);
+  }
+  .code-head .dots{display:flex; gap:6px;}
+  .code-head .dots i{width:8px; height:8px; border-radius:50%; background:var(--line); display:inline-block;}
+  .code-body{
+    padding:14px 0; font-family:var(--mono); font-size:12.5px;
+    max-height:460px; overflow-y:auto;
+  }
+  .code-line{
+    display:grid; grid-template-columns:26px 1fr; gap:12px;
+    padding:2.5px 16px;
+  }
+  .code-line .num{color:var(--ink-faint); text-align:right; user-select:none;}
+  .code-line .txt{white-space:pre; color:var(--ink-soft); overflow-x:auto;}
+  .code-line .txt .k{color:var(--teal);}
+  .code-line .txt .s{color:var(--ink);}
+  .code-line .txt .b{color:var(--amber);}
+
+  .status-strip{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 18px; border-top:1px solid var(--line);
+    font-family:var(--mono); font-size:12px;
+  }
+  .status-strip .left{display:flex; align-items:center; gap:8px;}
+  .status-strip .dot{width:7px; height:7px; border-radius:50%;}
+  .status-strip.ok{color:var(--teal);}
+  .status-strip.ok .dot{background:var(--teal); box-shadow:0 0 0 3px var(--teal-soft);}
+  .status-strip.pending{color:var(--amber);}
+  .status-strip.pending .dot{background:var(--amber); box-shadow:0 0 0 3px var(--amber-soft);}
+
+  .action-row{display:flex; gap:10px;}
+  .action-btn{
+    flex:1; font-family:var(--mono); font-size:13px; padding:11px 14px;
+    border-radius:var(--radius); cursor:pointer; text-align:center;
+    transition:background .15s ease, border-color .15s ease, transform .15s ease, color .15s ease;
+  }
+  .action-btn.primary{background:var(--ink); color:var(--paper); border:1px solid var(--ink);}
+  .action-btn.primary:hover{background:var(--teal); border-color:var(--teal); transform:translateY(-1px);}
+  .action-btn.primary:disabled{background:var(--line); border-color:var(--line); color:var(--ink-faint); cursor:not-allowed; transform:none;}
+  .action-btn.secondary{background:var(--card); color:var(--ink); border:1px solid var(--line);}
+  .action-btn.secondary:hover{border-color:var(--ink); transform:translateY(-1px);}
+
+  .toast{
+    font-family:var(--mono); font-size:12.5px; color:var(--teal);
+    background:var(--teal-soft); border:1px solid rgba(15,110,92,0.25);
+    border-radius:var(--radius); padding:9px 14px;
+    opacity:0; transform:translateY(-4px); pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  @media (max-width:960px){
+    .workspace{grid-template-columns:1fr;}
+    .output-col{position:static;}
+  }
+</style>
+</head>
+<body>
+
+<!-- <header class="nav"> -->
+  <!-- <div class="nav-inner"> -->
+    <!-- <div class="brand">{ <span>RichStruct</span> }</div> -->
+    <!-- <nav class="nav-links"> -->
+      <!-- <a href="{{ url_for('dashboard') }}">Dashboard</a> -->
+      <!-- <a href="{{ url_for('generate') }}" class="active">Generate</a> -->
+      <!-- <a href="{{ url_for('validate') }}">Validate</a> -->
+      <!-- <a href="{{ url_for('logout') }}" class="nav-cta">Log out</a> -->
+    <!-- </nav> -->
+  <!-- </div> -->
+<!-- </header> -->
+
+<div class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow">Schema generator</div>
+    <h1>Build a schema.</h1>
+    <p>Pick a type, fill in the form, and RichStruct writes the JSON-LD as you go.</p>
+  </div>
+
+  <div class="type-picker">
+    <div class="label">Schema type</div>
+    <div class="type-chips" id="typeChips"></div>
+  </div>
+
+  <div class="workspace">
+
+    <div class="form-card">
+      <div class="form-card-head">
+        <span class="ftype" id="formTypeLabel">Product</span>
+        <span class="fcount" id="fieldCount">0 fields</span>
+      </div>
+      <div class="form-body" id="formBody"></div>
+    </div>
+
+    <div class="output-col">
+      <div class="code-panel">
+        <div class="code-head">
+          <span id="fileName">product.jsonld</span>
+          <div class="dots"><i></i><i></i><i></i></div>
+        </div>
+        <div class="code-body" id="codeBody"></div>
+        <div class="status-strip pending" id="statusStrip">
+          <div class="left"><span class="dot"></span> <span id="statusText">3 required fields remaining</span></div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="action-btn secondary" id="copyBtn">Copy</button>
+        <button class="action-btn secondary" id="downloadBtn">Download</button>
+        <button class="action-btn primary" id="saveBtn" disabled>Save schema</button>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+
+  </div>
+</div>
+
+<form id="saveForm" method="POST" action="{{ url_for('save_schema') }}" style="display:none;">
+  {% if csrf_token %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% endif %}
+  <input type="hidden" name="schema_type" id="saveType">
+  <input type="hidden" name="json_ld" id="saveJson">
+</form>
+
+<script>
+  // ---------------- Schema field definitions ----------------
+  const SCHEMA_DEFS = {
+    Product: {
+      type: 'Product',
+      fields: [
+        { id:'name', label:'name', kind:'text', required:true, placeholder:'Field Notebook', tip:'The product name as shown to customers.' },
+        { id:'description', label:'description', kind:'textarea', required:false, placeholder:'A pocket-sized notebook for daily notes.', tip:'A short product description.' },
+        { id:'image', label:'image', kind:'url', required:true, placeholder:'https://example.com/product.jpg', tip:'A direct URL to a product image.' },
+        { id:'sku', label:'sku', kind:'text', required:false, placeholder:'FN-014', tip:'Stock keeping unit / product code.' },
+        { id:'brand', label:'brand', kind:'text', required:false, placeholder:'Fieldcraft Co.', tip:'Brand or manufacturer name.', path:['brand','name'] },
+        { id:'price', label:'offers.price', kind:'text', required:true, placeholder:'12.99', tip:'Numeric price, no currency symbol.', path:['offers','price'] },
+        { id:'priceCurrency', label:'offers.priceCurrency', kind:'text', required:true, placeholder:'USD', tip:'ISO 4217 currency code.', path:['offers','priceCurrency'] },
+        { id:'availability', label:'offers.availability', kind:'text', required:false, placeholder:'https://schema.org/InStock', tip:'Availability URL from Schema.org.', path:['offers','availability'] },
+        { id:'ratingValue', label:'aggregateRating.ratingValue', kind:'text', required:false, placeholder:'4.6', tip:'Average rating value.', path:['aggregateRating','ratingValue'] },
+        { id:'reviewCount', label:'aggregateRating.reviewCount', kind:'text', required:false, placeholder:'38', tip:'Total number of reviews.', path:['aggregateRating','reviewCount'] }
+      ]
+    },
+    FAQ: {
+      type: 'FAQPage',
+      fields: [
+        { id:'q1', label:'question 1', kind:'text', required:true, placeholder:'Do you ship internationally?', tip:'A question exactly as asked.' },
+        { id:'a1', label:'answer 1', kind:'textarea', required:true, placeholder:'Yes, we ship to over 40 countries.', tip:'The accepted answer text.' },
+        { id:'q2', label:'question 2', kind:'text', required:false, placeholder:'What is your return policy?', tip:'Optional second question.' },
+        { id:'a2', label:'answer 2', kind:'textarea', required:false, placeholder:'Returns are accepted within 30 days.', tip:'Answer for the second question.' }
+      ]
+    },
+    Article: {
+      type: 'Article',
+      fields: [
+        { id:'headline', label:'headline', kind:'text', required:true, placeholder:'How Structured Data Improves SEO', tip:'The article title.' },
+        { id:'image', label:'image', kind:'url', required:true, placeholder:'https://example.com/cover.jpg', tip:'A direct URL to the cover image.' },
+        { id:'authorName', label:'author.name', kind:'text', required:true, placeholder:'Asha Rao', tip:'The article author.', path:['author','name'] },
+        { id:'datePublished', label:'datePublished', kind:'date', required:true, tip:'Publish date.' },
+        { id:'description', label:'description', kind:'textarea', required:false, placeholder:'A short summary of the article.', tip:'Optional summary shown in search results.' },
+        { id:'publisherName', label:'publisher.name', kind:'text', required:false, placeholder:'RichStruct Blog', tip:'The publishing organization.', path:['publisher','name'] }
+      ]
+    },
+    'Local Business': {
+      type: 'LocalBusiness',
+      fields: [
+        { id:'name', label:'name', kind:'text', required:true, placeholder:'Blue Owl Cafe', tip:'Business name.' },
+        { id:'image', label:'image', kind:'url', required:false, placeholder:'https://example.com/storefront.jpg', tip:'A photo of the business.' },
+        { id:'streetAddress', label:'address.streetAddress', kind:'text', required:true, placeholder:'221B Baker Street', tip:'Street address.', path:['address','streetAddress'] },
+        { id:'addressLocality', label:'address.addressLocality', kind:'text', required:true, placeholder:'Lucknow', tip:'City or locality.', path:['address','addressLocality'] },
+        { id:'telephone', label:'telephone', kind:'text', required:false, placeholder:'+91 522 000 0000', tip:'Contact phone number.' },
+        { id:'priceRange', label:'priceRange', kind:'text', required:false, placeholder:'$$', tip:'Relative price range.' },
+        { id:'openingHours', label:'openingHours', kind:'text', required:false, placeholder:'Mo-Sa 09:00-18:00', tip:'Opening hours in schema.org format.' }
+      ]
+    },
+    Event: {
+      type: 'Event',
+      fields: [
+        { id:'name', label:'name', kind:'text', required:true, placeholder:'Campus Tech Fest 2026', tip:'Event name.' },
+        { id:'startDate', label:'startDate', kind:'date', required:true, tip:'Start date of the event.' },
+        { id:'endDate', label:'endDate', kind:'date', required:false, tip:'End date, if different from start.' },
+        { id:'locationName', label:'location.name', kind:'text', required:true, placeholder:'Main Auditorium', tip:'Venue name.', path:['location','name'] },
+        { id:'image', label:'image', kind:'url', required:false, placeholder:'https://example.com/event.jpg', tip:'Event banner image.' },
+        { id:'description', label:'description', kind:'textarea', required:false, placeholder:'A day of talks and workshops.', tip:'Short event description.' },
+        { id:'offerPrice', label:'offers.price', kind:'text', required:false, placeholder:'0', tip:'Ticket price, if any.', path:['offers','price'] }
+      ]
+    },
+    Course: {
+      type: 'Course',
+      fields: [
+        { id:'name', label:'name', kind:'text', required:true, placeholder:'Introduction to Structured Data', tip:'Course title.' },
+        { id:'description', label:'description', kind:'textarea', required:true, placeholder:'Learn how to model and validate schema markup.', tip:'What the course covers.' },
+        { id:'providerName', label:'provider.name', kind:'text', required:true, placeholder:'RichStruct Academy', tip:'The organization offering the course.', path:['provider','name'] },
+        { id:'providerUrl', label:'provider.url', kind:'url', required:false, placeholder:'https://example.com', tip:'Provider website.', path:['provider','url'] }
+      ]
+    },
+    'Job Posting': {
+      type: 'JobPosting',
+      fields: [
+        { id:'title', label:'title', kind:'text', required:true, placeholder:'Backend Developer', tip:'Job title.' },
+        { id:'description', label:'description', kind:'textarea', required:true, placeholder:'We are looking for a Flask developer...', tip:'Full job description.' },
+        { id:'datePosted', label:'datePosted', kind:'date', required:true, tip:'Date the posting went live.' },
+        { id:'validThrough', label:'validThrough', kind:'date', required:false, tip:'Application deadline.' },
+        { id:'hiringOrgName', label:'hiringOrganization.name', kind:'text', required:true, placeholder:'RichStruct Inc.', tip:'Company name.', path:['hiringOrganization','name'] },
+        { id:'jobLocation', label:'jobLocation.address.addressLocality', kind:'text', required:false, placeholder:'Remote', tip:'Where the job is based.', path:['jobLocation','address','addressLocality'] },
+        { id:'employmentType', label:'employmentType', kind:'text', required:false, placeholder:'FULL_TIME', tip:'Employment type constant.' }
+      ]
+    },
+    Recipe: {
+      type: 'Recipe',
+      fields: [
+        { id:'name', label:'name', kind:'text', required:true, placeholder:'Lemon Garlic Pasta', tip:'Recipe name.' },
+        { id:'image', label:'image', kind:'url', required:true, placeholder:'https://example.com/pasta.jpg', tip:'A photo of the finished dish.' },
+        { id:'authorName', label:'author.name', kind:'text', required:false, placeholder:'Chef Meera', tip:'Recipe author.', path:['author','name'] },
+        { id:'prepTime', label:'prepTime', kind:'text', required:false, placeholder:'PT15M', tip:'ISO 8601 duration.' },
+        { id:'cookTime', label:'cookTime', kind:'text', required:false, placeholder:'PT20M', tip:'ISO 8601 duration.' },
+        { id:'recipeYield', label:'recipeYield', kind:'text', required:false, placeholder:'4 servings', tip:'How many servings it makes.' },
+        { id:'ingredients', label:'recipeIngredient', kind:'textarea', required:true, placeholder:'One ingredient per line', tip:'Each line becomes one array item.', isList:true },
+        { id:'instructions', label:'recipeInstructions', kind:'textarea', required:true, placeholder:'One step per line', tip:'Each line becomes one instruction step.', isList:true }
+      ]
+    }
+  };
+
+  const chipsEl = document.getElementById('typeChips');
+  const formBody = document.getElementById('formBody');
+  const formTypeLabel = document.getElementById('formTypeLabel');
+  const fieldCount = document.getElementById('fieldCount');
+  const codeBody = document.getElementById('codeBody');
+  const fileName = document.getElementById('fileName');
+  const statusStrip = document.getElementById('statusStrip');
+  const statusText = document.getElementById('statusText');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const toast = document.getElementById('toast');
+
+  let currentType = 'Product';
+  let currentRawJson = '';
+
+  Object.keys(SCHEMA_DEFS).forEach(typeName => {
+    const chip = document.createElement('div');
+    chip.className = 'type-chip' + (typeName === currentType ? ' active' : '');
+    chip.textContent = typeName;
+    chip.addEventListener('click', () => selectType(typeName));
+    chip.dataset.type = typeName;
+    chipsEl.appendChild(chip);
+  });
+
+  function selectType(typeName){
+    currentType = typeName;
+    document.querySelectorAll('.type-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.type === typeName);
+    });
+    formTypeLabel.textContent = typeName;
+    fileName.textContent = typeName.toLowerCase().replace(/\s+/g,'-') + '.jsonld';
+    renderForm();
+    updateOutput();
+  }
+
+  function renderForm(){
+    const def = SCHEMA_DEFS[currentType];
+    formBody.innerHTML = '';
+    fieldCount.textContent = def.fields.length + ' fields';
+
+    def.fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+
+      const labelRow = document.createElement('div');
+      labelRow.className = 'field-label-row';
+
+      const label = document.createElement('label');
+      label.className = 'field-label';
+      label.setAttribute('for', f.id);
+      label.innerHTML = f.label + ' <span class="tip" title="' + f.tip.replace(/"/g,'&quot;') + '">?</span>';
+
+      const tag = document.createElement('span');
+      tag.className = 'field-tag ' + (f.required ? 'req' : 'opt');
+      tag.textContent = f.required ? 'Required' : 'Optional';
+
+      labelRow.appendChild(label);
+      labelRow.appendChild(tag);
+      wrap.appendChild(labelRow);
+
+      let input;
+      if (f.kind === 'textarea') {
+        input = document.createElement('textarea');
+      } else {
+        input = document.createElement('input');
+        input.type = (f.kind === 'date') ? 'date' : (f.kind === 'url') ? 'url' : 'text';
+      }
+      input.id = f.id;
+      input.name = f.id;
+      if (f.placeholder) input.placeholder = f.placeholder;
+      if (f.required) input.required = true;
+      input.addEventListener('input', () => { input.classList.add('touched'); updateOutput(); });
+      wrap.appendChild(input);
+
+      if (f.isList) {
+        const hint = document.createElement('div');
+        hint.className = 'hint';
+        hint.textContent = 'One item per line — becomes a list in the output.';
+        wrap.appendChild(hint);
+      }
+
+      formBody.appendChild(wrap);
+    });
+  }
+
+  function setNested(obj, path, value){
+    let node = obj;
+    for (let i = 0; i < path.length - 1; i++){
+      const key = path[i];
+      if (!node[key] || typeof node[key] !== 'object') node[key] = {};
+      node = node[key];
+    }
+    node[path[path.length-1]] = value;
+  }
+
+  function buildJsonLd(){
+    const def = SCHEMA_DEFS[currentType];
+    const obj = { '@context': 'https://schema.org', '@type': def.type };
+    let missing = 0;
+
+    if (currentType === 'FAQ') {
+      const q1 = document.getElementById('q1').value.trim();
+      const a1 = document.getElementById('a1').value.trim();
+      const q2 = document.getElementById('q2').value.trim();
+      const a2 = document.getElementById('a2').value.trim();
+      const mainEntity = [];
+      if (q1 && a1) mainEntity.push({ '@type':'Question', name:q1, acceptedAnswer:{ '@type':'Answer', text:a1 } });
+      if (q2 && a2) mainEntity.push({ '@type':'Question', name:q2, acceptedAnswer:{ '@type':'Answer', text:a2 } });
+      obj.mainEntity = mainEntity;
+      if (!q1) missing++; if (!a1) missing++;
+      return { obj, missing };
+    }
+
+    def.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      const raw = el.value.trim();
+
+      if (!raw) {
+        if (f.required) missing++;
+        return;
+      }
+
+      let value = raw;
+      if (f.isList) {
+        value = raw.split('\n').map(s => s.trim()).filter(Boolean);
+      }
+
+      if (f.path) {
+        setNested(obj, f.path, value);
+      } else {
+        obj[f.id] = value;
+      }
+    });
+
+    return { obj, missing };
+  }
+
+  function highlightJson(json){
+    const escaped = json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?)|\b(true|false|null)\b/g,
+      (match, strMatch, _inner, colon, boolNull) => {
+        if (boolNull) return '<span class="b">' + boolNull + '</span>';
+        const cls = colon ? 'k' : 's';
+        return '<span class="' + cls + '">' + strMatch + '</span>';
+      }
+    );
+  }
+
+  function updateOutput(){
+    const { obj, missing } = buildJsonLd();
+    currentRawJson = JSON.stringify(obj, null, 2);
+    const highlighted = highlightJson(currentRawJson);
+    const lines = highlighted.split('\n');
+
+    codeBody.innerHTML = lines.map((line, i) =>
+      '<div class="code-line"><span class="num">' + (i+1) + '</span><span class="txt">' + (line || ' ') + '</span></div>'
+    ).join('');
+
+    if (missing === 0) {
+      statusStrip.className = 'status-strip ok';
+      statusText.textContent = 'valid — all required fields present';
+      saveBtn.disabled = false;
+    } else {
+      statusStrip.className = 'status-strip pending';
+      statusText.textContent = missing + ' required field' + (missing === 1 ? '' : 's') + ' remaining';
+      saveBtn.disabled = true;
+    }
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(currentRawJson).then(() => showToast('Copied to clipboard.'));
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const blob = new Blob([currentRawJson], { type: 'application/ld+json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentType.toLowerCase().replace(/\s+/g,'-') + '-schema.jsonld';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  saveBtn.addEventListener('click', () => {
+    document.getElementById('saveType').value = currentType;
+    document.getElementById('saveJson').value = currentRawJson;
+    document.getElementById('saveForm').submit();
+  });
+
+  // init
+  renderForm();
+  updateOutput();
+</script>
+
+</body>
+</html>
