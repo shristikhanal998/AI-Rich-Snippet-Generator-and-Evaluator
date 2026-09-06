@@ -3,7 +3,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash 
 from datetime import datetime # Initialize the db object db = SQLAlchemy() class User(db.Model, UserMixin):
 # Initialize the db object
- db = SQLAlchemy() 
+db = SQLAlchemy() 
 class User(db.Model, UserMixin):
  
     # Primary ID for each user

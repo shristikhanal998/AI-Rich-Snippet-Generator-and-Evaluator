@@ -25,53 +25,57 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('landing.html')
 
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('landing'))
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('signup'))
         user_exists = User.query.filter((User.username == username) | (User.email == email)).first()
         if user_exists:
             flash('Username or email already exists.', 'danger')
-            return redirect(url_for('register'))
+            return redirect(url_for('signup'))
         new_user = User(username=username, email=email)
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
         flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('signup.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('landing'))
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             login_user(user)
-            flash(f'Welcome back, {username}!', 'success')
+            flash(f'Welcome back, {user.username}!', 'success')
             return redirect(url_for('index'))
         flash('Login failed.', 'danger')
     return render_template('login.html')
-
-
+ 
+ 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('Logged out.', 'info')
     return redirect(url_for('login'))
-
-
+ 
+ 
 if __name__ == '__main__':
     app.run(debug=True)
