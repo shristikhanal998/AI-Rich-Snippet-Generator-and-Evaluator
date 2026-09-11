@@ -51,3 +51,40 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f"<User {self.username}>"
+
+class Schema(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    schema_type = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    # Example: "Product: iPhone 15"
+    schema_name = db.Column(
+        db.String(200),
+        nullable=False
+    )
+
+    json_content = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'),
+        nullable=False
+    )
+
+    def __repr__(self):
+        return f'<Schema {self.schema_name}>'
