@@ -42,6 +42,48 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        terms_agreed = request.form.get('terms')
+
+        if not username or not email or not password or not confirm_password:
+            flash(
+                'All fields are required.',
+                'danger'
+            )
+
+            return redirect(
+                url_for('signup')
+            )
+
+        if len(password) < 8:
+            flash(
+                'Password must be at least 8 characters.',
+                'danger'
+            )
+
+            return redirect(
+                url_for('signup')
+            )
+
+        if password != confirm_password:
+            flash(
+                'Passwords do not match.',
+                'danger'
+            )
+
+            return redirect(
+                url_for('signup')
+            )
+
+        if not terms_agreed:
+            flash(
+                'You must agree to the Terms of Service and Privacy Policy.',
+                'danger'
+            )
+
+            return redirect(
+                url_for('signup')
+            )
 
         user_exists = User.query.filter(
             (User.username == username) |
@@ -88,31 +130,42 @@ def login():
 
     if request.method == 'POST':
 
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
+        remember = request.form.get('remember')
 
-        user = User.query.filter_by(
-            username=username
-        ).first()
-
-        if user and user.check_password(password):
-
-            login_user(user)
-
+        if not email or not password:
             flash(
-                f'Welcome back, {username}!',
-                'success'
+                'Email and password are required.',
+                'danger'
             )
 
             return redirect(
-                url_for('index')
+                url_for('login')
             )
 
-        else:
+        user = User.query.filter_by(email=email).first()
+
+        if not user or not user.check_password(password):
             flash(
-                'Login failed. Check your username and password.',
+                'Invalid email or password.',
                 'danger'
             )
+
+            return redirect(
+                url_for('login')
+            )
+
+        login_user(user, remember=bool(remember))
+
+        flash(
+            'Logged in successfully!',
+            'success'
+        )
+
+        return redirect(
+            url_for('dashboard')
+        )
 
     return render_template('login.html')
 
