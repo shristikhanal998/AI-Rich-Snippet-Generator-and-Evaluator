@@ -31,7 +31,7 @@ def index():
     return render_template('landing.html')
 
 
-@app.route('/signup', methods=['GET', 'POST'])
+'''@app.route('/signup', methods=['GET', 'POST'])
 def register():
 
     if current_user.is_authenticated:
@@ -119,10 +119,63 @@ def register():
             url_for('login')
         )
 
+    return render_template('signup.html')'''
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        name = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        #validations
+        if not name or len(name.strip())<2:
+            flash('Name must be at least 2 characters long.', 'error')
+            return redirect(url_for('signup'))
+        
+        if not email or '@' not in email:
+            flash('Please enter a valid email address.', 'error')
+            return redirect(url_for('signup'))
+        
+        #password must be at least 8 characters long and a combination of letters and numbers and special characters
+        if len(password)<8 or not any(char.isdigit() for char in password)\
+              or not any(char.isalpha() for char in password) or not any(not char.isalnum()\
+                                                                          for char in password):
+            flash('Password must be at least 8 characters long and contain letters, \
+                  numbers, and special characters.', 'error')
+            return redirect(url_for('signup'))
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('signup'))
+        
+        #check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email already registered. Please log in.', 'error')
+            return redirect(url_for('signup'))
+        
+        #create new user
+        hashed_password = generate_password_hash(password)
+        new_user = User(
+            name=name.strip(),
+            email=email.strip(),
+            password=hashed_password
+        )
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred during registration. Please try again.', 'error')
+            return redirect(url_for('signup'))
+        
     return render_template('signup.html')
 
 
-@app.route('/login', methods=['GET', 'POST'])
+'''@app.route('/login', methods=['GET', 'POST'])
 def login():
 
     if current_user.is_authenticated:
@@ -167,7 +220,25 @@ def login():
             url_for('dashboard')
         )
 
+    return render_template('login.html')'''
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['user_name'] = user.name
+            flash('Login successful!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password.', 'error')
     return render_template('login.html')
+
 
 
 @app.route('/logout')
@@ -325,13 +396,13 @@ def generate_jsonld(schema_type):
     db.session.commit()
 
     return render_template(
-        'result.html',
+        'generate_schema.html',
         json_data=json_string,
         schema_type=schema_type
     )
 
 
-@app.route('/history')
+@app.route('/about')
 @login_required
 def history():
 
@@ -342,7 +413,7 @@ def history():
     ).all()
 
     return render_template(
-        'history.html',
+        'about.html',
         schemas=user_schemas
     )
 
